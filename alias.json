@@ -1,0 +1,25 @@
+{
+    "name": "sqlrecon",
+    "version": "v0.0.0",
+    "command_name": "sqlrecon",
+    "original_author": "xforcered",
+    "repo_url": "https://github.com/sliverarmory/sqlrecon",
+    "help": "MS SQL toolkit designed for offensive reconnaissance and post-exploitation",
+    "entrypoint": "Main",
+    "allow_args": true,
+    "default_args": "-h",
+    "is_reflective": false,
+    "is_assembly": true,
+    "files": [
+      {
+        "os": "windows",
+        "arch": "amd64",
+        "path": "SQLRecon.exe"
+      },
+      {
+        "os": "windows",
+        "arch": "386",
+        "path": "SQLRecon.exe"
+      }
+    ]
+  }
