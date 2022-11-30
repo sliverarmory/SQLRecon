@@ -42,7 +42,7 @@ jobs:
         $Version = "`"$Version`""
         Get-Content -Path alias.json | .\jq.exe ".version |= `"$Version`"" > ./SQLRecon/SQLRecon/compiled/alias.json
         cd ./SQLRecon/SQLRecon/compiled/
-        tar.exe -czvf ..\..\sqlrecon.tar.gz .
+        tar.exe -czvf ..\..\..\sqlrecon.tar.gz .\alias.json .\SQLRecon.exe
     - name: Sign Package
       run: |
         Write-Output "${{ secrets.MINISIGN_PRIVATE_KEY }}" > minisign.key
