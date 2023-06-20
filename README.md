@@ -6,6 +6,12 @@ A C# MS-SQL toolkit designed for offensive reconnaissance and post-exploitation.
 # Usage
 You can grab a copy of SQLRecon from the [releases](https://github.com/skahwah/SQLRecon/releases) page. Alternatively, feel free to compile the solution yourself This should be as straight forward as cloning the repo, double clicking the solution file and building.
 
+## Enumeration
+SQLRecon supports enumeration of Active Directory for MSSQL SPNs, akin to [PowerUpSQL's](https://github.com/NetSPI/PowerUpSQL) `Get-SQLInstanceDomain`.
+
+* <b>-e</b> - Enumeration Type
+  * <b>domain -d DOMAIN | (OPTIONAL) Domain FQDN</b> - Use the current users token to enumerate AD for MSSQL SPNs.
+
 ## Mandatory Arguments
 
 The mandatory arguments consist of an authentication type (either Windows, Local or Azure), connection parameters and a module.
@@ -17,29 +23,31 @@ The mandatory arguments consist of an authentication type (either Windows, Local
 
 If the authentication type is <b>Windows</b>, then you will need to supply the following parameters.
   * <b>-s SERVERNAME</b> - SQL server hostname
-  * <b>-d DATABASE</b> - SQL server database name
+  * <b>-d DATABASE</b> - (OPTIONAL) SQL server database name, defaults to 'master'
   * <b>-m MODULE</b> - The module you want to use
 
 If the authentication type is <b>Local</b>, then you will need to supply the following parameters.
-  * <b>-d DATABASE</b> - SQL server database name
+  * <b>-d DATABASE</b> - (OPTIONAL) SQL server database name, defaults to 'master'
   * <b>-u USERNAME</b> - Username of local SQL user
   * <b>-p PASSWORD</b> - Password of local SQL user
   * <b>-m MODULE</b> - The module you want to use
 
 If the authentication type is <b>Azure</b>, then you will need to supply the following parameters.
-* <b>-d DATABASE</b> - SQL server database name
-* <b>-r DOMAIN.COM</b> - FQDN of Domain
-* <b>-u USERNAME</b> - Username of domain user
-* <b>-p PASSWORD</b> - Password of domain user
-* <b>-m MODULE</b> - The module you want to use
+  * <b>-d DATABASE</b> - (OPTIONAL) SQL server database name, defaults to 'master'
+  * <b>-r DOMAIN.COM</b> - FQDN of Domain
+  * <b>-u USERNAME</b> - Username of domain user
+  * <b>-p PASSWORD</b> - Password of domain user
+  * <b>-m MODULE</b> - The module you want to use
 
 There are cases where a MS SQL Server might not be listening on a standard TCP port. A good example is MS SQL failover clustering. If the authentication type is <b>Windows</b> or <b>Local</b>, you can optionally set a non-standard connection port by supplying the <b>-r PORT</b> flag. By default, SQLRecon will connect to a databases via TCP Port 1433.
 
 ## Standard Modules
 Standard modules are used to interact against a single MS SQL server.
 
+* <b>info</b> - Print information about the SQL Service
 * <b>query -o QUERY</b> - Execute an arbitrary SQL query
 * <b>whoami</b> - See what user you are logged in as, mapped as and what roles exist
+* <b>users</b> - See what user accounts and groups can authenticate against the database
 * <b>databases</b> - Show all databases present on the SQL server
 * <b>tables -o DATABASE</b> - Show all tables in the database you specify
 * <b>search -o KEYWORD</b> - Search column names within tables of the database you are connected to
@@ -60,7 +68,8 @@ Standard modules are used to interact against a single MS SQL server.
 ## Impersonation Modules
 Impersonation modules are used to interact against a single MS SQL server, under the context of an impersonated SQL user.
 * <b>impersonate</b> - Enumerate any user accounts that can be impersonated
-* <b>iwhoami</b> - See what user you are logged in as, mapped as and what roles exist
+* <b>iwhoami -i IMPERSONATEUSER</b> - See what user you are logged in as, mapped as and what roles exist
+* <b>iusers -i IMPERSONATEUSER</b> - See what user accounts and groups can authenticate against the database
 * <b>iquery -i IMPERSONATEUSER -o QUERY</b> - Execute an arbitrary SQL query as an impersonated user
 <br>↓ Command Execution (requires sysadmin role or similar)
 * <b>ienablexp -i IMPERSONATEUSER</b> - Enable xp_cmdshell
@@ -79,7 +88,8 @@ Impersonation modules are used to interact against a single MS SQL server, under
 Linked SQL Server modules are effective when you are able to interact with a linked SQL server via an established connection.
 * <b>links</b> - Enumerate any linked SQL servers
 * <b>lquery -l LINKEDSERVERNAME -o QUERY</b> - Execute an arbitrary SQL query on the linked SQL server
-* <b>lwhoami</b> - See what user you are logged in as on the linked SQL server
+* <b>lwhoami -l LINKEDSERVERNAME</b> - See what user you are logged in as on the linked SQL server
+* <b>lusers -l LINKEDSERVERNAME</b> - See what user accounts and groups can authenticate against the database on the linked SQL server
 * <b>ldatabases -l LINKEDSERVERNAME</b> - Show all databases present on the linked SQL server
 * <b>ltables -l LINKEDSERVERNAME -o DATABASE</b> - Show all tables in the supplied database on the linked SQL server
 * <b>lsmb -l LINKEDSERVERNAME -o SHARE</b> - Capture NetNTLMv2 hash from linked SQL server
@@ -94,17 +104,54 @@ Linked SQL Server modules are effective when you are able to interact with a lin
 * <b>lolecmd -l LINKEDSERVERNAME -o COMMAND</b> - Execute an arbitrary system command using OLE Automation Procedures on the linked SQL server
 * <b>lenableclr -l LINKEDSERVERNAME</b> - Enable Custom CLR Assemblies on the linked SQL server
 * <b>ldisableclr -l LINKEDSERVERNAME</b> - Disable Custom CLR Assemblies on the linked SQL server
+* <b>lclr -o DLLPATH -f FUNCTION</b> - Load and execute a .NET assembly within a custom stored procedure on the linked SQL server
 * <b>lagentstatus -l LINKEDSERVERNAME</b> - Check to see if SQL agent is running and obtain jobs on the linked SQL server
+* <b>lagentcmd -l LINKEDSERVERNAME -o COMMAND</b> - Execute an arbitrary system command on the linked SQL server
 
 ## Examples
 See the <a href="https://github.com/skahwah/SQLRecon/wiki">wiki</a>.  for detailed examples.
 
 ## Roadmap
 The below techniques are on the roadmap for future releases
-* Look into creating lclr
-* Look into creating lagentcmd
+* Expand enumeration modules
 
 ## History
+<details>
+<summary>v2.2.2</summary>
+
+* Fixed checking RPC status on linked SQL servers.
+</details>
+
+<details>
+<summary>v2.2.1</summary>
+
+* Added the capability to download .NET assemblies via HTTP/S
+</details>
+
+<details>
+<summary>v2.2</summary>
+
+* Expanded roles which are queried in the roles, iroles and lroles modules
+* Created users, iusers and lusers modules
+* Fixed hash not being dropped from sp_drop_trusted_assembly in clr and iclr modules
+* Created lagentcmd module
+* Created lclr module
+</details>
+
+<details>
+<summary>v2.1.6</summary>
+
+* Added 'info' module, '-m info'.
+* Corrections in Help.cs.
+* Resolved issues with mandatory arguments with Local and Azure authentication.
+</details>
+
+<details>
+<summary>v2.1.5</summary>
+
+* Added option to enumerate domain SPNs (-e domain).
+</details>
+
 <details>
 <summary>v2.1.4</summary>
 
