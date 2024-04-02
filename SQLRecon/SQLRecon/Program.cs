@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using SQLRecon.Modules;
-using SQLRecon.Auth;
+using SQLRecon.Utilities;
 
 namespace SQLRecon
 {
@@ -9,51 +8,50 @@ namespace SQLRecon
     {
         static void Main(string[] args)
         {
-            try
+            if (args.Length == 0)
             {
-                //using hawksters dictionary technique to build an argument list
-                Dictionary<string, string> argDict = ParseTheArguments(args);
-
-                // print help if no arguments are supplieds
-                if ((args.Length > 0 && argDict.Count == 0) || argDict.ContainsKey("h"))
-                {
-                    Help.Show(); 
-                    return;
-                }
-
-                // this handles inspecting the arguments, selecting the right modules and executing them
-                ArgumentLogic ArgumentLogic = new ArgumentLogic();
-                ArgumentLogic.AuthenticationType(argDict);
+                Help _ = new();
             }
-            catch (NullReferenceException)
+            else
             {
-
-            }
-        } // end main
-
-        // ParseTheArguments
-        public static Dictionary<string, string> ParseTheArguments(string[] args)
-        {
-            try
-            {
-                Dictionary<string, string> ret = new Dictionary<string, string>();
-                if (args.Length % 2 == 0 || args.Length % 3 == 0 && args.Length > 0)
+                try
                 {
-                    for (int i = 0; i < args.Length; i = i + 2)
+                    // Take arguments supplied via the command line and parse them into a dictionary.
+                    Dictionary<string, string> parsedArgs = ArgumentLogic.ParseArguments(args);
+
+                    /* The ParseArguments method will return a key and value pairing of "Error"
+                     * if any errors have been encountered during parsing. This is used as an
+                     * indicator to gracefully exit the program.
+                     */
+                    if (parsedArgs.ContainsKey("Error") && parsedArgs.ContainsValue("Error"))
+                        // Go no further
+                        return;
+
+                    if (parsedArgs.ContainsKey("auth"))
                     {
-                        ret.Add(args[i].Substring(1, args[i].Length - 1).ToLower(), args[i + 1]);
-
+                        // Set the authentication type, if conditions have passed, evaluate the arguments.
+                        if (SetAuthenticationType.EvaluateAuthenticationType(parsedArgs))
+                            ArgumentLogic.EvaluateTheArguments(parsedArgs);
+                    }
+                    else if (parsedArgs.ContainsKey("enum"))
+                    {
+                        SetEnumerationType.EvaluateEnumerationType(parsedArgs);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Use the '/help' flag to display the help menu.");
+                        // Go no further
+                        return;
                     }
                 }
+                catch (Exception)
+                {
+                    // Go no further.
+                    return;
+                }
+            }
+        } 
 
-                return ret;
-            }
-            catch (ArgumentException)
-            {
-                Console.WriteLine("");
-                Console.WriteLine("\n[!] You specified duplicate switches. Check your command again.\n");
-                return null;
-            }
-        } // end ParseTheArguments
+
     }
 }

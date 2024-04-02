@@ -99,20 +99,22 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="authentication\ArgumentLogic.cs" />
-    <Compile Include="authentication\Azure.cs" />
-    <Compile Include="authentication\Windows.cs" />
-    <Compile Include="authentication\TestAuthentication.cs" />
-    <Compile Include="authentication\Local.cs" />
+    <Compile Include="commands\ModuleHandler.cs" />
+    <Compile Include="modules\ADSI.cs" />
+    <Compile Include="utilities\SetEnumerationType.cs" />
+    <Compile Include="utilities\PrintUtils.cs" />
+    <Compile Include="utilities\SetAuthenticationType.cs" />
+    <Compile Include="utilities\ArgumentLogic.cs" />
     <Compile Include="modules\AgentJobs.cs" />
-    <Compile Include="modules\EnableDisable.cs" />
+    <Compile Include="modules\ConfigureOptions.cs" />
     <Compile Include="modules\GetDomainSPNs.cs" />
-    <Compile Include="modules\Random.cs" />
-    <Compile Include="modules\Impersonate.cs" />
+    <Compile Include="utilities\Random.cs" />
     <Compile Include="modules\CaptureHash.cs" />
-    <Compile Include="modules\Help.cs" />
+    <Compile Include="commands\GlobalVariables.cs" />
+    <Compile Include="utilities\Help.cs" />
     <Compile Include="modules\CLRAssemblies.cs" />
     <Compile Include="modules\OLECmdExec.cs" />
+    <Compile Include="modules\SCCM.cs" />
     <Compile Include="modules\SQLServerInfo.cs" />
     <Compile Include="modules\XPCmdShell.cs" />
     <Compile Include="modules\Roles.cs" />
@@ -120,7 +122,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="utilities\DomainSearcher.cs" />
+    <Compile Include="utilities\Impersonation.cs" />
     <Compile Include="utilities\Ldap.cs" />
+    <Compile Include="utilities\SQLAuthentication.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

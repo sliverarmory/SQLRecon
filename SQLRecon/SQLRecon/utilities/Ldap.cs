@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.DirectoryServices;
 
-namespace SQLRecon.utilities
+namespace SQLRecon.Utilities
 {
-    public sealed class Ldap
+    internal sealed class Ldap
     {
         private readonly DomainSearcher _searcher;
         
@@ -13,6 +13,13 @@ namespace SQLRecon.utilities
             _searcher = searcher;
         }
         
+        /// <summary>
+        /// The ExecuteQuery method allows LDAP queries to be executed 
+        /// against a domain controller.
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <param name="properties"></param>
+        /// <returns></returns>
         public Dictionary<string, Dictionary<string, object[]>> ExecuteQuery(string filter, string[] properties = null)
         {
             var searcher = new DirectorySearcher(_searcher.Directory)

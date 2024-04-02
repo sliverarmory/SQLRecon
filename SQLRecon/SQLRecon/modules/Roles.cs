@@ -1,14 +1,15 @@
-﻿using System;
-using System.Data.SqlClient;
+﻿using System.Data.SqlClient;
+using SQLRecon.Utilities;
 
 namespace SQLRecon.Modules
 {
-    public class Roles
+    internal class Roles
     {
-        private readonly SQLQuery _sqlQuery = new();
+        private static readonly PrintUtils _print = new();
+        private static readonly SqlQuery _sqlQuery = new();
 
         /// <summary>
-        /// Check to see if a user is part of a role
+        /// The CheckServerRole method checks if a user is part of a role.
         /// </summary>
         /// <param name="con"></param>
         /// <param name="role"></param>
@@ -16,16 +17,17 @@ namespace SQLRecon.Modules
         /// <returns></returns>
         public bool CheckServerRole(SqlConnection con, string role, bool print = false)
         {
-            var output = _sqlQuery.ExecuteQuery(con, "SELECT IS_SRVROLEMEMBER('" + role + "');").TrimStart('\n');
+            var sqlOutput = _sqlQuery.ExecuteQuery(con, 
+                "SELECT IS_SRVROLEMEMBER('" + role + "');").TrimStart('\n');
 
             if (print)
-                RoleResult(role, output);
+                _roleResult(role, sqlOutput);
 
-            return output.Equals("1");
+            return sqlOutput.Equals("1");
         }
 
         /// <summary>
-        /// Check to see if a user is part of a role on a linked SQL server
+        /// The CheckLinkedServerRole method checks if a user is part of a role on a linked SQL server.
         /// </summary>
         /// <param name="con"></param>
         /// <param name="role"></param>
@@ -34,16 +36,17 @@ namespace SQLRecon.Modules
         /// <returns></returns>
         public bool CheckLinkedServerRole(SqlConnection con, string role, string linkedSQLServer, bool print = false)
         {
-            var output = _sqlQuery.ExecuteQuery(con, "select * from openquery(\"" + linkedSQLServer + "\", 'SELECT IS_SRVROLEMEMBER(''" + role + "'');')").TrimStart('\n');
+            var sqlOutput = _sqlQuery.ExecuteQuery(con, "select * from openquery(\"" + linkedSQLServer + "\", " +
+                "'SELECT IS_SRVROLEMEMBER(''" + role + "'');')").TrimStart('\n');
 
             if (print)
-                RoleResult(role, output);
+                _roleResult(role, sqlOutput);
 
-            return output.Equals("1");
+            return sqlOutput.Equals("1");
         }
 
         /// <summary>
-        /// Check the roles of an impersonated user 
+        /// The CheckImpersonatedRole method checks the roles of an impersonated user.
         /// </summary>
         /// <param name="con"></param>
         /// <param name="role"></param>
@@ -52,23 +55,29 @@ namespace SQLRecon.Modules
         /// <returns></returns>
         public bool CheckImpersonatedRole(SqlConnection con, string role, string impersonate, bool print = false)
         {
-            var output = _sqlQuery.ExecuteQuery(con, "EXECUTE AS LOGIN = '" + impersonate + "';SELECT IS_SRVROLEMEMBER('" + role + "');").TrimStart('\n');
+            var sqlOutput = _sqlQuery.ExecuteImpersonationQuery(con, impersonate,
+                "SELECT IS_SRVROLEMEMBER('" + role + "');").TrimStart('\n');
 
             if (print)
-                RoleResult(role, output);
+                _roleResult(role, sqlOutput);
 
-            return output.Equals("1");
+            return sqlOutput.Equals("1");
         }
 
-        private static void RoleResult(string role, string sqlOutput)
+        /// <summary>
+        /// The _roleResult method prints if a user is part of a role or not.
+        /// </summary>
+        /// <param name="role"></param>
+        /// <param name="sqlOutput"></param>
+        private static void _roleResult(string role, string sqlOutput)
         {
             if (sqlOutput.Equals("1"))
             {
-                Console.WriteLine("User is a member of " + role + " role");
+                _print.Nested(string.Format("User is a member of {0} role.", role), true);
             }
             else
             {
-                Console.WriteLine("User is NOT a member of " + role + " role");
+                _print.Nested(string.Format("User is NOT a member of {0} role.", role), true);
             }
         }
     }

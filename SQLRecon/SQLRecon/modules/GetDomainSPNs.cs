@@ -1,27 +1,33 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Principal;
-
-using SQLRecon.utilities;
+using SQLRecon.Utilities;
 
 namespace SQLRecon.Modules
 {
-    public static class DomainSPNs
+    internal static class DomainSPNs
     {
+        private static readonly PrintUtils _print = new();
+
+        /// <summary>
+        /// The GetMSSQLSPNs method will obtain any SQL servers from
+        /// Active Directory if the SQL server has an associated SPN.
+        /// </summary>
+        /// <param name="domain"></param>
         public static void GetMSSQLSPNs(string domain = null)
         {
-            Console.Write("Looking for MSSQL SPNs... ");
-            
+            _print.Status("Looking for MSSQL SPNs ...", true);
+
             var searcher = string.IsNullOrWhiteSpace(domain)
                 ? new DomainSearcher()
                 : new DomainSearcher($"LDAP://{domain}");
-            
+
             var ldap = new Ldap(searcher);
-            
-            const string filter = "(&(sAMAccountType=805306368)(servicePrincipalName=MSSQL*))";
+
+            const string ldapFilter = "(&(sAMAccountType=805306368)(servicePrincipalName=MSSQL*))";
             var properties = new[] { "cn", "samaccountname", "objectsid", "serviceprincipalname", "lastlogon" };
 
-            var results = ldap.ExecuteQuery(filter, properties);
+            var results = ldap.ExecuteQuery(ldapFilter, properties);
             var instances = new List<SqlInstance>();
 
             foreach (var result in results.Values)
@@ -29,13 +35,13 @@ namespace SQLRecon.Modules
                 foreach (string spn in result["serviceprincipalname"])
                 {
                     var sqlInstance = new SqlInstance();
-                    
+
                     // parse the SPN string
                     // MSSQLSvc/sql-1.testlab.local:1433
                     // MSSQLSvc/sql-1.testlab.local
 
                     var i1 = spn.IndexOf('/');
-                    
+
                     var serviceName = spn.Substring(0, i1);
                     var instance = spn.Substring(i1 + 1, spn.Length - i1 - 1);
 
@@ -58,15 +64,14 @@ namespace SQLRecon.Modules
 
                     var lastLogon = (long)result["lastlogon"][0];
                     sqlInstance.LastLogon = DateTime.FromBinary(lastLogon).ToString("G");
-                    
+
                     instances.Add(sqlInstance);
                 }
             }
 
-            Console.WriteLine($"{instances.Count} found.");
+            _print.Status(string.Format("{0} found.", instances.Count), true);
             instances.ForEach(i => i.Print());
         }
-
         private sealed class SqlInstance
         {
             public string ComputerName { get; set; }
@@ -81,14 +86,14 @@ namespace SQLRecon.Modules
             public void Print()
             {
                 Console.WriteLine("");
-                Console.WriteLine("ComputerName:  {0}", ComputerName);
-                Console.WriteLine("Instance:      {0}", Instance);
-                Console.WriteLine("AccountSid:    {0}", AccountSid);
-                Console.WriteLine("AccountName:   {0}", AccountName);
-                Console.WriteLine("AccountCn:     {0}", AccountCn);
-                Console.WriteLine("Service:       {0}", ServiceName);
-                Console.WriteLine("SPN:           {0}", Spn);
-                Console.WriteLine("LastLogon:     {0}", LastLogon);
+                _print.Nested(string.Format("ComputerName:  {0}", ComputerName), true);
+                _print.Nested(string.Format("Instance:      {0}", Instance), true);
+                _print.Nested(string.Format("AccountSid:    {0}", AccountSid), true);
+                _print.Nested(string.Format("AccountName:   {0}", AccountName), true);
+                _print.Nested(string.Format("AccountCn:     {0}", AccountCn), true);
+                _print.Nested(string.Format("Service:       {0}", ServiceName), true);
+                _print.Nested(string.Format("SPN:           {0}", Spn), true);
+                _print.Nested(string.Format("LastLogon:     {0}", LastLogon), true);
             }
         }
     }

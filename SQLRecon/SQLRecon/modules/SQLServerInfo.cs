@@ -1,10 +1,10 @@
 using System;
 using System.Data.SqlClient;
+using SQLRecon.Utilities;
 
 namespace SQLRecon.Modules
 {
-
-    public class SQLServerInfo
+    internal class SqlServerInfo
     {
         public string ComputerName { get; set; }
         public string DomainName { get; set; }
@@ -26,13 +26,19 @@ namespace SQLRecon.Modules
         public string IsSysAdmin { get; set; }
         public string ActiveSessions { get; set; }
 
-        private readonly SqlConnection _connection;
+        private static readonly PrintUtils _print = new();
+        private SqlConnection _connection;
+        private static readonly SqlQuery _sqlQuery = new();
 
-        public SQLServerInfo(SqlConnection connection)
+        public SqlServerInfo(SqlConnection connection)
         {
             _connection = connection;
         }
 
+        /// <summary>
+        /// The GetAllSQLServerInfo method will connect to a SQL server
+        /// and obtain information about the local SQL server instance.
+        /// </summary>
         public void GetAllSQLServerInfo()
         {
             var roles = new Roles();
@@ -40,82 +46,98 @@ namespace SQLRecon.Modules
 
             IsSysAdmin = sysadmin ? "Yes" : "No";
 
-            ComputerName = GetComputerName();
-            DomainName = GetDomainName();
-            ServicePid = GetServicePid();
+            ComputerName = _getComputerName();
+            DomainName = _getDomainName();
+            ServicePid = _getServicePid();
 
             if (sysadmin)
             {
-                OsMachineType = GetOsMachineType();
-                OsVersion = GetOsVersion();
+                OsMachineType = _getOsMachineType();
+                OsVersion = _getOsVersion();
             }
 
-            ServiceName = GetSqlServerServiceName();
-            ServiceAccount = GetSqlServiceAccountName();
-            AuthenticationMode = GetAuthenticationMode();
-            ForcedEncryption = GetForcedEncryption();
-            Clustered = GetClustered();
-            SqlServerVersionNumber = GetSqlVersionNumber();
-            SqlServerMajorVersion = GetSqlMajorVersionNumber();
-            SqlServerEdition = GetSqlServerEdition();
-            SqlServerServicePack = GetSqlServerServicePack();
-            OsArchitecture = GetOsArchitecture();
-            OsVersionNumber = GetOsVersionNumber();
-            CurrentLogin = GetCurrentLogon();
-            ActiveSessions = GetActiveSessions();
+            ServiceName = _getSqlServerServiceName();
+            ServiceAccount = _getSqlServiceAccountName();
+            AuthenticationMode = _getAuthenticationMode();
+            ForcedEncryption = _getForcedEncryption();
+            Clustered = _getClustered();
+            SqlServerVersionNumber = _getSqlVersionNumber();
+            SqlServerMajorVersion = _getSqlMajorVersionNumber();
+            SqlServerEdition = _getSqlServerEdition();
+            SqlServerServicePack = _getSqlServerServicePack();
+            OsArchitecture = _getOsArchitecture();
+            OsVersionNumber = _getOsVersionNumber();
+            CurrentLogin = _getCurrentLogon();
+            ActiveSessions = _getActiveSessions();
         }
 
+
+        /// <summary>
+        /// The PrintInfo method prints objects asssocated with a computer.
+        /// </summary>
         public void PrintInfo()
         {
             Console.WriteLine();
-            Console.WriteLine("ComputerName:           {0}", ComputerName);
-            Console.WriteLine("DomainName:             {0}", DomainName);
-            Console.WriteLine("ServicePid:             {0}", ServicePid);
-            Console.WriteLine("ServiceName:            {0}", ServiceName);
-            Console.WriteLine("ServiceAccount:         {0}", ServiceAccount);
-            Console.WriteLine("AuthenticationMode:     {0}", AuthenticationMode);
-            Console.WriteLine("ForcedEncryption:       {0}", ForcedEncryption);
-            Console.WriteLine("Clustered:              {0}", Clustered);
-            Console.WriteLine("SqlServerVersionNumber: {0}", SqlServerVersionNumber);
-            Console.WriteLine("SqlServerMajorVersion:  {0}", SqlServerMajorVersion);
-            Console.WriteLine("SqlServerEdition:       {0}", SqlServerEdition);
-            Console.WriteLine("SqlServerServicePack:   {0}", SqlServerServicePack);
-            Console.WriteLine("OsArchitecture:         {0}", OsArchitecture);
+            _print.Nested(string.Format("ComputerName:           {0}", ComputerName), true);
+            _print.Nested(string.Format("DomainName:             {0}", DomainName), true);
+            _print.Nested(string.Format("ServicePid:             {0}", ServicePid), true);
+            _print.Nested(string.Format("ServiceName:            {0}", ServiceName), true);
+            _print.Nested(string.Format("ServiceAccount:         {0}", ServiceAccount), true);
+            _print.Nested(string.Format("AuthenticationMode:     {0}", AuthenticationMode), true);
+            _print.Nested(string.Format("ForcedEncryption:       {0}", ForcedEncryption), true);
+            _print.Nested(string.Format("Clustered:              {0}", Clustered), true);
+            _print.Nested(string.Format("SqlServerVersionNumber: {0}", SqlServerVersionNumber), true);
+            _print.Nested(string.Format("SqlServerMajorVersion:  {0}", SqlServerMajorVersion), true);
+            _print.Nested(string.Format("SqlServerEdition:       {0}", SqlServerEdition), true);
+            _print.Nested(string.Format("SqlServerServicePack:   {0}", SqlServerServicePack), true);
+            _print.Nested(string.Format("OsArchitecture:         {0}", OsArchitecture), true);
 
             if (!string.IsNullOrEmpty(OsMachineType))
-                Console.WriteLine("OsMachineType:          {0}", OsMachineType);
+                _print.Nested(string.Format("OsMachineType:          {0}", OsMachineType), true);
 
             if (!string.IsNullOrEmpty(OsVersion))
-                Console.WriteLine("OsVersion:              {0}", OsVersion);
+                _print.Nested(string.Format("OsVersion:              {0}", OsVersion), true);
 
-            Console.WriteLine("OsVersionNumber:        {0}", OsVersionNumber);
-            Console.WriteLine("CurrentLogin:           {0}", CurrentLogin);
-            Console.WriteLine("IsSysAdmin:             {0}", IsSysAdmin);
-            Console.WriteLine("ActiveSessions:         {0}", ActiveSessions);
+            _print.Nested(string.Format("OsVersionNumber:        {0}", OsVersionNumber), true);
+            _print.Nested(string.Format("CurrentLogin:           {0}", CurrentLogin), true);
+            _print.Nested(string.Format("IsSysAdmin:             {0}", IsSysAdmin), true);
+            _print.Nested(string.Format("ActiveSessions:         {0}", ActiveSessions), true);
         }
 
-        public string GetComputerName()
+        /// <summary>
+        /// The _getComputerName method will get the computer name
+        /// from a SQL server.
+        /// </summary>
+        private string _getComputerName()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, "SELECT @@SERVERNAME;").TrimStart('\n');
+            return _sqlQuery.ExecuteQuery(_connection, "SELECT @@SERVERNAME;").TrimStart('\n');
         }
 
-        public string GetDomainName()
+        /// <summary>
+        /// The _getDomainName method will get the domain name
+        /// from a SQL server.
+        /// </summary>
+        private string _getDomainName()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, "SELECT DEFAULT_DOMAIN();").TrimStart('\n');
+            return _sqlQuery.ExecuteQuery(_connection, "SELECT DEFAULT_DOMAIN();").TrimStart('\n');
         }
 
-        public string GetServicePid()
+        /// <summary>
+        /// The _getServicePid method will get the service pid
+        /// from a SQL server.
+        /// </summary>
+        private string _getServicePid()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, "SELECT SERVERPROPERTY('processid');").TrimStart('\n');
+            return _sqlQuery.ExecuteQuery(_connection, "SELECT SERVERPROPERTY('processid');").TrimStart('\n');
         }
 
-        public string GetOsVersion()
+        /// <summary>
+        /// The _getOsVersion method will get the OS version
+        /// from a SQL server.
+        /// </summary>
+        private string _getOsVersion()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"DECLARE @ProductName  SYSNAME
+            return _sqlQuery.ExecuteQuery(_connection, @"DECLARE @ProductName  SYSNAME
             EXECUTE master.dbo.xp_regread
             @rootkey		= N'HKEY_LOCAL_MACHINE',
             @key			= N'SOFTWARE\Microsoft\Windows NT\CurrentVersion',
@@ -124,10 +146,13 @@ namespace SQLRecon.Modules
             SELECT @ProductName;").TrimStart('\n');
         }
 
-        public string GetSqlServerServiceName()
+        /// <summary>
+        /// The _getSqlServerServiceName method will get the SQL service name
+        /// from a SQL server.
+        /// </summary>
+        private string _getSqlServerServiceName()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"DECLARE @SQLServerServiceName varchar(250)
+            return _sqlQuery.ExecuteQuery(_connection, @"DECLARE @SQLServerServiceName varchar(250)
             DECLARE @SQLServerInstance varchar(250)
             if @@SERVICENAME = 'MSSQLSERVER'
             BEGIN
@@ -142,10 +167,13 @@ namespace SQLRecon.Modules
             SELECT @SQLServerServiceName;").TrimStart('\n');
         }
 
-        public string GetSqlServiceAccountName()
+        /// <summary>
+        /// The _getSqlServiceAccountName method will get the SQL service account name
+        /// from a SQL server.
+        /// </summary>
+        private string _getSqlServiceAccountName()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"DECLARE @SQLServerInstance varchar(250)
+            return _sqlQuery.ExecuteQuery(_connection, @"DECLARE @SQLServerInstance varchar(250)
             if @@SERVICENAME = 'MSSQLSERVER'
             BEGIN
             set @SQLServerInstance = 'SYSTEM\CurrentControlSet\Services\MSSQLSERVER'
@@ -162,10 +190,13 @@ namespace SQLRecon.Modules
             SELECT @ServiceAccountName;").TrimStart('\n');
         }
 
-        public string GetAuthenticationMode()
+        /// <summary>
+        /// The _getAuthenticationMode method will get the authentication mode
+        /// from a SQL server.
+        /// </summary>
+        private string _getAuthenticationMode()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"DECLARE @AuthenticationMode INT
+            return _sqlQuery.ExecuteQuery(_connection, @"DECLARE @AuthenticationMode INT
             EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE',
             N'Software\Microsoft\MSSQLServer\MSSQLServer',
             N'LoginMode', @AuthenticationMode OUTPUT
@@ -177,10 +208,13 @@ namespace SQLRecon.Modules
             END);").TrimStart('\n');
         }
 
-        public string GetForcedEncryption()
+        /// <summary>
+        /// The _getForcedEncryption method will get the encryption mode
+        /// from a SQL server.
+        /// </summary>
+        private string _getForcedEncryption()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"BEGIN TRY 
+            return _sqlQuery.ExecuteQuery(_connection, @"BEGIN TRY 
             DECLARE @ForcedEncryption INT
             EXEC master.dbo.xp_instance_regread N'HKEY_LOCAL_MACHINE',
             N'SOFTWARE\MICROSOFT\Microsoft SQL Server\MSSQLServer\SuperSocketNetLib',
@@ -191,44 +225,62 @@ namespace SQLRecon.Modules
             SELECT @ForcedEncryption;").TrimStart('\n');
         }
 
-        public string GetClustered()
+        /// <summary>
+        /// The _getClustered method will get the cluster method
+        /// from a SQL server.
+        /// </summary>
+        private string _getClustered()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"SELECT CASE  SERVERPROPERTY('IsClustered')
+            return _sqlQuery.ExecuteQuery(_connection, @"SELECT CASE  SERVERPROPERTY('IsClustered')
             WHEN 0
             THEN 'No'
             ELSE 'Yes'
             END").TrimStart('\n');
         }
 
-        public string GetSqlVersionNumber()
+        /// <summary>
+        /// The _getSqlVersionNumber method will get the SQL version number
+        /// from a SQL server.
+        /// </summary>
+        private string _getSqlVersionNumber()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"SELECT SERVERPROPERTY('productversion');").TrimStart('\n');
+            return _sqlQuery.ExecuteQuery(_connection, @"SELECT SERVERPROPERTY('productversion');").TrimStart('\n');
         }
 
-        public string GetSqlMajorVersionNumber()
+        /// <summary>
+        /// The _getSqlMajorVersionNumber method will get the SQL version major number
+        /// from a SQL server.
+        /// </summary>
+        private string _getSqlMajorVersionNumber()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"SELECT SUBSTRING(@@VERSION, CHARINDEX('2', @@VERSION), 4);").TrimStart('\n');
+            return _sqlQuery.ExecuteQuery(_connection, @"SELECT SUBSTRING(@@VERSION, CHARINDEX('2', @@VERSION), 4);").TrimStart('\n');
         }
 
-        public string GetSqlServerEdition()
+        /// <summary>
+        /// The _getSqlServerEdition method will get the SQL edition
+        /// from a SQL server.
+        /// </summary>
+        private string _getSqlServerEdition()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"SELECT SERVERPROPERTY('Edition');").TrimStart('\n');
+            return _sqlQuery.ExecuteQuery(_connection, @"SELECT SERVERPROPERTY('Edition');").TrimStart('\n');
         }
 
-        public string GetSqlServerServicePack()
+        /// <summary>
+        /// The _getSqlServerServicePack method will get the SQL service pack version
+        /// from a SQL server.
+        /// </summary>
+        private string _getSqlServerServicePack()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"SELECT SERVERPROPERTY('ProductLevel');").TrimStart('\n');
+            return _sqlQuery.ExecuteQuery(_connection, @"SELECT SERVERPROPERTY('ProductLevel');").TrimStart('\n');
         }
 
-        public string GetOsMachineType()
+        /// <summary>
+        /// The _getOsMachineType method will get the OS type
+        /// from a SQL server.
+        /// </summary>
+        private string _getOsMachineType()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"DECLARE @MachineType  SYSNAME
+            return _sqlQuery.ExecuteQuery(_connection, @"DECLARE @MachineType  SYSNAME
             EXECUTE master.dbo.xp_regread
             @rootkey		= N'HKEY_LOCAL_MACHINE',
             @key			= N'SYSTEM\CurrentControlSet\Control\ProductOptions',
@@ -237,28 +289,40 @@ namespace SQLRecon.Modules
             SELECT @MachineType;").TrimStart('\n');
         }
 
-        public string GetOsArchitecture()
+        /// <summary>
+        /// The _getOsArchitecture method will get the OS architecture
+        /// from a SQL server.
+        /// </summary>
+        private string _getOsArchitecture()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"SELECT SUBSTRING(@@VERSION, CHARINDEX('x', @@VERSION), 3);").TrimStart('\n');
+            return _sqlQuery.ExecuteQuery(_connection, @"SELECT SUBSTRING(@@VERSION, CHARINDEX('x', @@VERSION), 3);").TrimStart('\n');
         }
 
-        public string GetOsVersionNumber()
+        /// <summary>
+        /// The _getOsVersionNumber method will get the OS version number
+        /// from a SQL server.
+        /// </summary>
+        private string _getOsVersionNumber()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"SELECT RIGHT(SUBSTRING(@@VERSION, CHARINDEX('Windows Server', @@VERSION), 19), 4);").TrimStart('\n');
+            return _sqlQuery.ExecuteQuery(_connection, @"SELECT RIGHT(SUBSTRING(@@VERSION, CHARINDEX('Windows Server', @@VERSION), 19), 4);").TrimStart('\n');
         }
 
-        public string GetCurrentLogon()
+        /// <summary>
+        /// The _getCurrentLogon method will get the currently logged on user
+        /// from a SQL server.
+        /// </summary>
+        private string _getCurrentLogon()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"SELECT SYSTEM_USER;").TrimStart('\n');
+            return _sqlQuery.ExecuteQuery(_connection, @"SELECT SYSTEM_USER;").TrimStart('\n');
         }
 
-        public string GetActiveSessions()
+        /// <summary>
+        /// The _getActiveSessions method will get the active logon sessions
+        /// from a SQL server.
+        /// </summary>
+        private string _getActiveSessions()
         {
-            var query = new SQLQuery();
-            return query.ExecuteQuery(_connection, @"SELECT COUNT(*) FROM [sys].[dm_exec_sessions] WHERE status = 'running';").TrimStart('\n');
+            return _sqlQuery.ExecuteQuery(_connection, @"SELECT COUNT(*) FROM [sys].[dm_exec_sessions] WHERE status = 'running';").TrimStart('\n');
         }
     }
 }

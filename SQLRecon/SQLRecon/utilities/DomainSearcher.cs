@@ -1,8 +1,8 @@
 using System.DirectoryServices;
 
-namespace SQLRecon.utilities
+namespace SQLRecon.Utilities
 {
-    public sealed class DomainSearcher
+    internal sealed class DomainSearcher
     {
         public DirectoryEntry Directory { get; }
         
