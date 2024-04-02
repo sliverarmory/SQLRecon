@@ -39,8 +39,7 @@ jobs:
         pwd
         ls
         $Version = git.exe describe --tags --abbrev=0
-        $Version = "`"$Version`""
-        Get-Content -Path alias.json | .\jq.exe ".version |= `"$Version`"" > ./SQLRecon/SQLRecon/compiled/alias.json
+        Get-Content -Path alias.json | .\jq.exe --arg ver "$Version" '.version |= $ver' > ./SQLRecon/SQLRecon/compiled/alias.json
         cd ./SQLRecon/SQLRecon/compiled/
         tar.exe -czvf ..\..\..\sqlrecon.tar.gz .\alias.json .\SQLRecon.exe
     - name: Sign Package
